@@ -1,26 +1,44 @@
 import psycopg2
 import tkinter as tk
 from tkinter import ttk
+from tkinter import messagebox
 
-def insert_table():
-
-    try:
-        name = name_entry.get()
-        address = address_entry.get()
-        age = int(age_entry.get())
-        number = number_entry.get()
-
-        conn = psycopg2.connect(dbname="project_psycopg", user="postgres", port="5432", password="qwaszxrainy")
-        curr = conn.cursor()
-        # query = 
-        curr.execute("insert into students (name, address, age, number) values(%s, %s, %s, %s)", (name, address, age, number))
+def insert_data():
+    try:  
+        parameters = (name_entry.get(),address_entry.get(), int(age_entry.get()), number_entry.get())
+        query = "insert into students (name, address, age, number) values(%s, %s, %s, %s)"
+        run_query(query, parameters)
         refresh_treeview()
         print("data inserted successfully")
-        conn.commit()
-        conn.close()
-
+        # messagebox.showinfo("data inserted successfully")
+        
     except Exception as e:
         print(e)
+        messagebox.showinfo(str(e))
+        
+def delete_data():
+    
+    selected_item = tree.selection()[0]
+    student_id = tree.item(selected_item)['values'][0]
+    
+    query = "delete from students where id = (%s)"
+    parameters = (student_id,)
+    run_query(query, parameters)
+    refresh_treeview()
+
+def update_data():
+    selected_item = tree.selection()[0]
+    student_id = tree.item(selected_item)['values'][0]
+    parameters = (name_entry.get(),address_entry.get(), int(age_entry.get()), number_entry.get() ,student_id)
+    query = "update students set name = %s, address = %s, age = %s ,number = %s WHERE id=%s"
+    run_query(query, parameters)
+    refresh_treeview()
+    
+def create_db():
+    query = "CREATE IF NOT EXISTS students(id serial primary key, name text, address text, age int, number text);"
+    parameters = ()
+    run_query(query, parameters)
+    refresh_treeview()
 
 def run_query(query, parameters=()):
     conn = psycopg2.connect(dbname="project_psycopg", user="postgres", port="5432", password="qwaszxrainy")
@@ -32,7 +50,7 @@ def run_query(query, parameters=()):
             query_result = curr.fetchall()
         conn.commit()    
     except psycopg2.Error as e:
-        # messagebox.showerror("Database Error", str(e))
+        messagebox.showerror("Database Error", str(e))
         print("Database Error", str(e))
         
     finally:
@@ -86,10 +104,13 @@ button_frame = tk.Frame(root)
 button_frame.grid(row=1, column=0, sticky="ew", pady=10)
 
 
-tk.Button(button_frame, text="Create Table", command=insert_table).grid(row=0, column=0)
-tk.Button(button_frame, text="Insert Data", command=insert_table).grid(row=0, column=1)
-tk.Button(button_frame, text="Update Data", command=insert_table).grid(row=0, column=2)
-tk.Button(button_frame, text="Delete Data", command=insert_table).grid(row=0, column=3)
+tk.Button(button_frame, text="Create Table",command=create_db ).grid(row=0, column=0)
+tk.Button(button_frame, text="Insert Data", command=insert_data).grid(row=0, column=1)
+tk.Button(button_frame, text="Update Data", command=update_data).grid(row=0, column=2)
+delete = tk.Button(button_frame, text="Delete Data", command=delete_data)
+delete.grid(row=0, column=3)
+root.bind('<Delete>', delete_data)
+
 
 
 tree_frame = tk.Frame(root)
